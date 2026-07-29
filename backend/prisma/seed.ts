@@ -4,9 +4,8 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding FlowSphere ERP + CRM database...');
+  console.log('Seeding FlowSphere ERP + CRM database...');
 
-  // Clean existing tables
   await prisma.activityLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.salesChallanItem.deleteMany();
@@ -20,8 +19,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   const hashedPassword = await bcrypt.hash('Password123!', 10);
-
-  // 1. Create Users
+  
   const admin = await prisma.user.create({
     data: { name: 'Alex Morgan', email: 'admin@flowsphere.com', password: hashedPassword, role: Role.ADMIN, isActive: true },
   });
@@ -35,25 +33,22 @@ async function main() {
     data: { name: 'Elena Rostova', email: 'accounts@flowsphere.com', password: hashedPassword, role: Role.ACCOUNTS, isActive: true },
   });
 
-  console.log('✅ Users seeded');
+  console.log('Users seeded');
 
-  // 2. Create Warehouses
   const wh1 = await prisma.warehouse.create({ data: { name: 'Central Logistics Hub', code: 'WH-CENTRAL', location: '104 Enterprise Way, Industrial Zone 4' } });
   const wh2 = await prisma.warehouse.create({ data: { name: 'East Coast Distribution Center', code: 'WH-EAST', location: '450 Terminal Blvd, Port Terminal B' } });
   const wh3 = await prisma.warehouse.create({ data: { name: 'West Depot & Fulfillment', code: 'WH-WEST', location: '880 Pacific Logistics Parkway' } });
 
-  console.log('✅ Warehouses seeded');
+  console.log('Warehouses seeded');
 
-  // 3. Create Categories
   const catElectronics = await prisma.category.create({ data: { name: 'Industrial Electronics', description: 'Control units, sensors, and power supplies' } });
   const catMachinery = await prisma.category.create({ data: { name: 'Machinery Components', description: 'Gears, pumps, valves, and actuators' } });
   const catRawMaterials = await prisma.category.create({ data: { name: 'Raw Metals & Alloys', description: 'Aluminium extruded bars, stainless steel sheets' } });
   const catPackaging = await prisma.category.create({ data: { name: 'Industrial Packaging', description: 'Pallet wraps, heavy-duty boxes, strapping bands' } });
   const catTools = await prisma.category.create({ data: { name: 'Heavy Tools & Equipments', description: 'Power tools, heavy equipments, and accessories' } });
 
-  console.log('✅ Categories seeded');
+  console.log('Categories seeded');
 
-  // 4. Create Products
   const products = [
     { sku: 'SKU-ELEC-001', name: 'Digital Logic Controller V4', description: 'Programmable multi-channel industrial controller unit', price: 36000.0, costPrice: 22400.0, stock: 45, minStock: 15, unit: 'pcs', categoryId: catElectronics.id, warehouseId: wh1.id },
     { sku: 'SKU-ELEC-002', name: 'Optical Laser Sensor Pro', description: 'High-precision photoelectric proximity sensor', price: 9600.0, costPrice: 5200.0, stock: 4, minStock: 10, unit: 'pcs', categoryId: catElectronics.id, warehouseId: wh1.id },
@@ -74,9 +69,8 @@ async function main() {
   const createdProducts = await Promise.all(
     products.map(p => prisma.product.create({ data: p }))
   );
-  console.log('✅ Products seeded');
+  console.log('Products seeded');
 
-  // 5. Create Customers
   const customers = [
     { name: 'Apex Industrial Automation Ltd', email: 'procurement@apexindustrial.com', phone: '+91 98765 43210', company: 'Apex Industries', address: 'Plot 42, MIDC Industrial Area', city: 'Mumbai', type: CustomerType.DISTRIBUTOR, status: CustomerStatus.ACTIVE },
     { name: 'Vanguard Robotics Inc', email: 'orders@vanguardrobotics.in', phone: '+91 98765 11223', company: 'Vanguard Group', address: '120 Innovation Drive, Tech Park', city: 'Bengaluru', type: CustomerType.WHOLESALE, status: CustomerStatus.ACTIVE },
@@ -93,9 +87,8 @@ async function main() {
   const createdCustomers = await Promise.all(
     customers.map(c => prisma.customer.create({ data: c }))
   );
-  console.log('✅ Customers seeded');
+  console.log('Customers seeded');
 
-  // 6. Customer Notes & Follow-ups
   await prisma.customerNote.createMany({
     data: [
       { customerId: createdCustomers[0].id, userId: sales.id, note: 'Discussed annual contract renewal for SKU-ELEC-001. Client requested 5% bulk discount.', type: NoteType.MEETING },
@@ -106,9 +99,8 @@ async function main() {
       { customerId: createdCustomers[6].id, userId: sales.id, note: 'Negotiated pricing for 100 units of Hydraulic Flow Valves.', type: NoteType.MEETING },
     ],
   });
-  console.log('✅ Customer notes & follow-ups seeded');
+  console.log('Customer notes & follow-ups seeded');
 
-  // 7. Initial Inventory Logs
   for (const prod of createdProducts) {
     await prisma.inventoryLog.create({
       data: {
@@ -122,9 +114,8 @@ async function main() {
       },
     });
   }
-  console.log('✅ Inventory logs seeded');
-
-  // 8. Sales Challans (Realistic extensive data)
+  console.log('Inventory logs seeded');
+  
   const today = new Date();
   
   const generateChallan = async (
@@ -174,13 +165,10 @@ async function main() {
     });
   };
 
-  // Generate challans spread across days
-  // Today's Confirmed Challans (to trigger Dashboard revenue)
   await generateChallan(1, 0, ChallanStatus.CONFIRMED, 0, [{ prodIdx: 0, qty: 5 }, { prodIdx: 11, qty: 20 }]);
   await generateChallan(2, 2, ChallanStatus.CONFIRMED, 0, [{ prodIdx: 5, qty: 2 }, { prodIdx: 6, qty: 10 }]);
   await generateChallan(3, 5, ChallanStatus.CONFIRMED, 0, [{ prodIdx: 8, qty: 50 }, { prodIdx: 9, qty: 10 }]);
-  
-  // Past Challans
+ 
   await generateChallan(4, 1, ChallanStatus.CONFIRMED, 2, [{ prodIdx: 1, qty: 2 }, { prodIdx: 2, qty: 15 }]);
   await generateChallan(5, 4, ChallanStatus.CONFIRMED, 5, [{ prodIdx: 10, qty: 500 }]);
   await generateChallan(6, 6, ChallanStatus.CONFIRMED, 10, [{ prodIdx: 4, qty: 12 }]);
@@ -196,9 +184,8 @@ async function main() {
   await generateChallan(14, 8, ChallanStatus.CANCELLED, 14, [{ prodIdx: 5, qty: 1 }]);
   await generateChallan(15, 6, ChallanStatus.DRAFT, 3, [{ prodIdx: 8, qty: 20 }]);
 
-  console.log('✅ Sales challans seeded');
+  console.log('Sales challans seeded');
 
-  // 9. System Notifications
   await prisma.notification.createMany({
     data: [
       { userId: warehouse.id, title: 'Critical Low Stock Warning', message: 'Product "Optical Laser Sensor Pro" has only 4 units remaining (Min Threshold: 10).', type: NotificationType.LOW_STOCK, link: '/products' },
@@ -207,9 +194,8 @@ async function main() {
       { userId: sales.id, title: 'Customer Follow-up Scheduled', message: 'Follow-up due with Apex Industrial Automation Ltd regarding Q3 supply contract.', type: NotificationType.FOLLOW_UP, link: `/customers/${createdCustomers[0].id}` },
     ],
   });
-  console.log('✅ Notifications seeded');
+  console.log('Notifications seeded');
 
-  // 10. Activity Audit Logs
   await prisma.activityLog.createMany({
     data: [
       { userId: sales.id, userName: sales.name, userRole: sales.role, entity: 'Sales Challan', action: 'CONFIRMED', details: 'Confirmed Sales Challan CHL-202607001 for Apex Industrial Automation' },
@@ -219,14 +205,14 @@ async function main() {
       { userId: admin.id, userName: admin.name, userRole: admin.role, entity: 'User Management', action: 'CREATED_USER', details: 'Created active user account for Marcus Vance (WAREHOUSE)' },
     ],
   });
-  console.log('✅ Activity audit logs seeded');
+  console.log('Activity audit logs seeded');
 
-  console.log('🎉 FlowSphere ERP + CRM database seed completed successfully!');
+  console.log('FlowSphere ERP + CRM database seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    console.error('Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {
