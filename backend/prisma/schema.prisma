@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+  WAREHOUSE
+  ACCOUNTS
+}
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  DISTRIBUTOR
+}
+
+enum CustomerStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+}
+
+enum NoteType {
+  FOLLOW_UP
+  MEETING
+  CALL
+  NOTE
+}
+
+enum MovementType {
+  IN
+  OUT
+  TRANSFER
+  ADJUSTMENT
+}
+
+enum ChallanStatus {
+  DRAFT
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum NotificationType {
+  LOW_STOCK
+  FOLLOW_UP
+  SYSTEM
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  password      String
+  name          String
+  role          Role            @default(SALES)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  customerNotes CustomerNote[]
+  inventoryLogs InventoryLog[]
+  salesChallans SalesChallan[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+model Customer {
+  id            String          @id @default(uuid())
+  name          String
+  email         String          @unique
+  phone         String
+  company       String?
+  gstNumber     String?
+  address       String
+  city          String
+  type          CustomerType    @default(RETAIL)
+  status        CustomerStatus  @default(LEAD)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  notes         CustomerNote[]
+  salesChallans SalesChallan[]
+
+  @@map("customers")
+}
+
+model CustomerNote {
+  id           String       @id @default(uuid())
+  customerId   String
+  userId       String
+  note         String
+  type         NoteType     @default(NOTE)
+  followUpDate DateTime?
+  createdAt    DateTime     @default(now())
+
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("customer_notes")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Warehouse {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  code        String    @unique
+  location    String
+  products    Product[]
+  inventoryLogs InventoryLog[]
+
+  @@map("warehouses")
+}
+
+model Product {
+  id           String         @id @default(uuid())
+  sku          String         @unique
+  name         String
+  description  String?
+  price        Float
+  costPrice    Float
+  stock        Int            @default(0)
+  minStock     Int            @default(10)
+  unit         String         @default("pcs")
+  barcode      String?
+  imageUrl     String?
+  categoryId   String
+  warehouseId  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  category     Category       @relation(fields: [categoryId], references: [id])
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id])
+  inventoryLogs InventoryLog[]
+  challanItems SalesChallanItem[]
+
+  @@map("products")
+}
+
+model InventoryLog {
+  id           String       @id @default(uuid())
+  productId    String
+  warehouseId  String
+  userId       String
+  type         MovementType
+  quantity     Int
+  reason       String
+  referenceNo  String?
+  createdAt    DateTime     @default(now())
+
+  product      Product      @relation(fields: [productId], references: [id])
+  warehouse    Warehouse    @relation(fields: [warehouseId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@map("inventory_logs")
+}
+
+model SalesChallan {
+  id           String           @id @default(uuid())
+  challanNo    String           @unique
+  customerId   String
+  userId       String
+  status       ChallanStatus    @default(DRAFT)
+  subtotal     Float
+  tax          Float            @default(0)
+  total        Float
+  notes        String?
+  confirmedAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  user         User             @relation(fields: [userId], references: [id])
+  items        SalesChallanItem[]
+
+  @@map("sales_challans")
+}
+
+model SalesChallanItem {
+  id            String       @id @default(uuid())
+  challanId     String
+  productId     String
+  skuSnapshot   String
+  nameSnapshot  String
+  priceSnapshot Float
+  quantity      Int
+  lineTotal     Float
+
+  challan       SalesChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  product       Product      @relation(fields: [productId], references: [id])
+
+  @@map("sales_challan_items")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String?
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  userName  String
+  userRole  Role
+  entity    String
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
