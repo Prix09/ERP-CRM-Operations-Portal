@@ -1,8 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { prisma } from './config/db.js';
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -20,18 +24,51 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: '*', // Allow local frontend dev server & production origin
+    origin: env.CORS_ORIGIN === '*' ? '*' : env.CORS_ORIGIN.split(','),
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(morgan('[:date[iso]] :method :url :status :res[content-length] - :response-time ms'));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
+
 import path from 'path';
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Health Check
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'UP', service: 'FlowSphere ERP API', timestamp: new Date().toISOString() });
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'UP',
+      database: 'Connected',
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'DOWN',
+      database: 'Disconnected',
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API V1 Routes

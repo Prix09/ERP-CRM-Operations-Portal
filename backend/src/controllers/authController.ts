@@ -7,10 +7,22 @@ export class AuthController {
     try {
       const { email, password } = req.body;
       const result = await AuthService.login(email, password);
+      
+      // Set refresh token in HTTP-Only cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+
       res.status(200).json({
         success: true,
         message: 'Login successful',
-        data: result,
+        data: {
+          token: result.token,
+          user: result.user
+        },
       });
     } catch (err: any) {
       res.status(401).json({
@@ -58,10 +70,21 @@ export class AuthController {
     try {
       const { email, password, name } = req.body;
       const result = await AuthService.register(name, email, password);
+      
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+
       res.status(201).json({
         success: true,
         message: 'Registration successful',
-        data: result,
+        data: {
+          token: result.token,
+          user: result.user
+        },
       });
     } catch (err: any) {
       res.status(400).json({
@@ -85,5 +108,41 @@ export class AuthController {
         message: err.message || 'Failed to process request',
       });
     }
+  }
+
+  static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      if (!refreshToken) {
+        res.status(401).json({ success: false, message: 'Refresh token missing' });
+        return;
+      }
+      const result = await AuthService.refreshSession(refreshToken);
+      
+      // Set new refresh token
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Token refreshed',
+        data: { token: result.token }
+      });
+    } catch (err: any) {
+      res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
+    }
+  }
+
+  static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
   }
 }

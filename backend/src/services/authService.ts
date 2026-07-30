@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/db.js';
-import { signToken } from '../utils/jwt.js';
+import { signToken, signRefreshToken } from '../utils/jwt.js';
 
 export class AuthService {
   static async login(email: string, password: string) {
@@ -28,6 +28,13 @@ export class AuthService {
       role: user.role,
     });
 
+    const refreshToken = signRefreshToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
+
     // Log Activity
     await prisma.activityLog.create({
       data: {
@@ -42,6 +49,7 @@ export class AuthService {
 
     return {
       token,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -113,6 +121,13 @@ export class AuthService {
       role: user.role,
     });
 
+    const refreshToken = signRefreshToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
+
     await prisma.activityLog.create({
       data: {
         userId: user.id,
@@ -126,6 +141,7 @@ export class AuthService {
 
     return {
       token,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -157,5 +173,38 @@ export class AuthService {
 
     // We always return success so as not to leak whether an email exists or not
     return { message: 'If an account with that email exists, we have sent a password reset link.' };
+  }
+
+  static async refreshSession(refreshToken: string) {
+    try {
+      const { verifyRefreshToken } = await import('../utils/jwt.js');
+      const decoded = verifyRefreshToken(refreshToken);
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+      if (!user || !user.isActive) {
+        throw new Error('Invalid or disabled account');
+      }
+
+      const token = signToken({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      });
+
+      const newRefreshToken = signRefreshToken({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      });
+
+      return {
+        token,
+        refreshToken: newRefreshToken,
+      };
+    } catch (err) {
+      throw new Error('Invalid refresh token');
+    }
   }
 }
