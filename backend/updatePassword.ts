@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('Admin@123', 10);
+  const hashedPassword = await bcrypt.hash('Password123!', 10);
   
   const emails = ['admin@flowsphere.com', 'sales@flowsphere.com', 'warehouse@flowsphere.com', 'accounts@flowsphere.com'];
   
@@ -15,7 +15,7 @@ async function main() {
         where: { email },
         data: { password: hashedPassword }
       });
-      console.log(`Updated password for ${email} to Admin@123`);
+      console.log(`Updated password for ${email} to Password123!`);
     } else {
       console.log(`User ${email} not found!`);
     }
