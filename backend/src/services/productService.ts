@@ -31,6 +31,34 @@ export class ProductService {
       prisma.product.count({ where }),
     ]);
 
+    // Auto-seed default product for fresh deployments
+    if (total === 0 && Object.keys(where).length === 0) {
+      const categories = await this.getCategories();
+      const warehouses = await this.getWarehouses();
+      if (categories.length > 0 && warehouses.length > 0) {
+        try {
+          await prisma.product.create({
+            data: {
+              sku: 'PRD-DEMO-001',
+              name: 'Demo Product',
+              description: 'Auto-generated demo product for testing',
+              price: 299.99,
+              costPrice: 150.00,
+              stock: 500,
+              minStock: 50,
+              unit: 'pcs',
+              categoryId: categories[0].id,
+              warehouseId: warehouses[0].id,
+            }
+          });
+          // Refetch to include the newly seeded product
+          return this.getProducts(params);
+        } catch (e) {
+          // Ignore unique constraint errors in case of race conditions
+        }
+      }
+    }
+
     let products = allProducts;
     if (params.lowStock) {
       products = products.filter((p) => p.stock <= p.minStock);
@@ -130,11 +158,34 @@ export class ProductService {
   }
 
   static async getCategories() {
-    return prisma.category.findMany({ orderBy: { name: 'asc' } });
+    let categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    if (categories.length === 0) {
+      await prisma.category.createMany({
+        data: [
+          { name: 'Electronics', description: 'Electronic items and gadgets' },
+          { name: 'Apparel', description: 'Clothing and accessories' },
+          { name: 'Home & Kitchen', description: 'Home appliances and kitchenware' },
+        ],
+        skipDuplicates: true,
+      });
+      categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    }
+    return categories;
   }
 
   static async getWarehouses() {
-    return prisma.warehouse.findMany({ orderBy: { name: 'asc' } });
+    let warehouses = await prisma.warehouse.findMany({ orderBy: { name: 'asc' } });
+    if (warehouses.length === 0) {
+      await prisma.warehouse.createMany({
+        data: [
+          { name: 'Main Hub', code: 'WH-MAIN-01', location: 'New York, NY' },
+          { name: 'West Coast Transit', code: 'WH-WEST-02', location: 'Los Angeles, CA' },
+        ],
+        skipDuplicates: true,
+      });
+      warehouses = await prisma.warehouse.findMany({ orderBy: { name: 'asc' } });
+    }
+    return warehouses;
   }
 
   static async addStockMovement(productId: string, data: any, userId: string) {
