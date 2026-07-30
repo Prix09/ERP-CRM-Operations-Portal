@@ -77,7 +77,7 @@ export class ProductController {
   static async exportCsv(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await ProductService.getProducts({ limit: 1000 });
-      const csvData = result.products.map((p) => ({
+      const csvData = result.products.map((p: any) => ({
         SKU: p.sku,
         Name: p.name,
         Category: p.category?.name || 'Uncategorized',

@@ -1,7 +1,7 @@
 import { prisma } from '../config/db.js';
 
 export class ProductService {
-  static async getProducts(params: { search?: string; categoryId?: string; warehouseId?: string; lowStock?: boolean; page?: number; limit?: number }) {
+  static async getProducts(params: { search?: string; categoryId?: string; warehouseId?: string; lowStock?: boolean; page?: number; limit?: number }): Promise<any> {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
