@@ -67,7 +67,7 @@ export class CustomerController {
   static async exportCsv(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await CustomerService.getCustomers({ limit: 1000 });
-      const csvData = result.customers.map((c) => ({
+      const csvData = result.customers.map((c: any) => ({
         ID: c.id,
         Name: c.name,
         Email: c.email,

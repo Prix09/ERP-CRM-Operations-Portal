@@ -2,7 +2,7 @@ import { CustomerType, CustomerStatus, NoteType } from '@prisma/client';
 import { prisma } from '../config/db.js';
 
 export class CustomerService {
-  static async getCustomers(params: { search?: string; type?: CustomerType; status?: CustomerStatus; page?: number; limit?: number }) {
+  static async getCustomers(params: { search?: string; type?: CustomerType; status?: CustomerStatus; page?: number; limit?: number }): Promise<any> {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -37,6 +37,28 @@ export class CustomerService {
       }),
       prisma.customer.count({ where }),
     ]);
+
+    // Auto-seed default customer for fresh deployments
+    if (total === 0 && Object.keys(where).length === 0) {
+      try {
+        await prisma.customer.create({
+          data: {
+            name: 'Demo Customer',
+            email: 'demo@flowsphere.com',
+            phone: '+1-555-0123',
+            company: 'Demo Company Ltd',
+            address: '123 Business Avenue',
+            city: 'New York',
+            type: 'WHOLESALE',
+            status: 'ACTIVE'
+          }
+        });
+        // Refetch after seeding
+        return this.getCustomers(params);
+      } catch (e) {
+        // Ignore unique constraint errors
+      }
+    }
 
     const mappedCustomers = customers.map(c => {
       const outstandingBalance = c.salesChallans.reduce((sum, ch) => sum + ch.total, 0);
