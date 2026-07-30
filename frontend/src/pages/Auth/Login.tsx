@@ -8,7 +8,7 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   
   const [email, setEmail] = useState('admin@flowsphere.com');
-  const [password, setPassword] = useState('Password123!');
+  const [password, setPassword] = useState('Admin@123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -138,28 +138,28 @@ export const Login: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <button 
                 type="button"
-                onClick={() => { setEmail('admin@flowsphere.com'); setPassword('Password123!'); }}
+                onClick={() => { setEmail('admin@flowsphere.com'); setPassword('Admin@123'); }}
                 className="py-2 px-3 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Admin
               </button>
               <button 
                 type="button"
-                onClick={() => { setEmail('sales@flowsphere.com'); setPassword('Password123!'); }}
+                onClick={() => { setEmail('sales@flowsphere.com'); setPassword('Admin@123'); }}
                 className="py-2 px-3 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Sales
               </button>
               <button 
                 type="button"
-                onClick={() => { setEmail('warehouse@flowsphere.com'); setPassword('Password123!'); }}
+                onClick={() => { setEmail('warehouse@flowsphere.com'); setPassword('Admin@123'); }}
                 className="py-2 px-3 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Warehouse
               </button>
               <button 
                 type="button"
-                onClick={() => { setEmail('accounts@flowsphere.com'); setPassword('Password123!'); }}
+                onClick={() => { setEmail('accounts@flowsphere.com'); setPassword('Admin@123'); }}
                 className="py-2 px-3 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Accounts

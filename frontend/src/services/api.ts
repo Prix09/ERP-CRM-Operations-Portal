@@ -29,9 +29,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_API_URL || '/api/v1'}/auth/refresh-token`,
+          '/auth/refresh-token',
           {},
-          { withCredentials: true }
+          { 
+            baseURL: api.defaults.baseURL,
+            withCredentials: true 
+          }
         );
         if (res.data.success) {
           localStorage.setItem('flowsphere_token', res.data.data.token);
